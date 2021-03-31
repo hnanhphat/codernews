@@ -1,0 +1,63 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+section {
+  padding: 100px 0;
+}
+
+.page-tit {
+  text-align: center;
+  padding: 50px 0;
+}
+
+#source {
+  max-width: 780px;
+  padding-bottom: 50px;
+  margin: 0 auto;
+}
+
+#newsList {
+  padding: 0 20px;
+}
+
+#newsList li {
+  border: 1px solid #000;
+  border-radius: 20px;
+  box-shadow: 0 4px 2px 0 rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-wrap: wrap;
+  max-width: 780px;
+  padding: 20px;
+  margin: 0 auto;
+}
+
+#newsList li:not(:last-child) {
+  margin-bottom: 50px;
+}
+
+#newsList li .info {
+  width: calc(100% - 100px);
+  padding-right: 20px;
+}
+
+#newsList li .img {
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  border-radius: 10px;
+  width: 100px;
+  height: 100px;
+}
+
+#newsList li .img img {
+  width: 100%;
+}
+
+#newsList li .link {
+  width: 100%;
+}
