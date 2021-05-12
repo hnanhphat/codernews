@@ -1,97 +1,136 @@
-const NEWS_API = '94a18f45f92e48f39f7d868b7e3e8dc8'
-const country = 'us'
-const url = `https://newsapi.org/v2/top-headlines?country=${country}&apiKey=${NEWS_API}`
+const API_KEY = "1b50730b754f46618060e2353ce40222";
+// const URL = `http://newsapi.org/v2/top-headlines?country=us&apiKey=${API_KEY}`;
 
-function renderArticle(arr) {
-  document.getElementById('newsList').innerHTML = arr.map((item) => `
-    <li>
-      <div class="info">
-        <h2 class="tit">${item.title}</h2>
-        <h3 class="author">${(item.author == '') ? 'Anonymous' : item.author}</h3>
-        <h4 class="source">${item.source.name}</h4>
-      </div>
-      <div class="img" style="background-image: url('${item.urlToImage}')"></div>
-      <p class="description">${item.description}</p>
-      <a href="${item.url}" class="post" target="_blank">See more</a>
-      <a href="javascript:void(0)" class="toggle"></a>
-    </li>
-  `).join('');
-}
+let newsList = [];
+let endpoint = "top-headlines";
+const urlOptions = {
+  country: "us",
+  category: "",
+  page: 1,
+  q: "",
+};
 
-function archiveArticle(oldArr, newArr) {
-  let newArticles = [];
-  oldArr.forEach(element => {
-    newArr.forEach((item) => {
-      if (item == element.source.name) {
-        newArticles.push(element);
-      }
+let currentSideMenu = "top-stories";
+
+const getURL = (urlOptions) => {
+  let url = Object.keys(urlOptions).reduce((url, option) => {
+    if (urlOptions[option]) {
+      url += `${option}=${urlOptions[option]}&`;
+    }
+    return url;
+  }, `http://newsapi.org/v2/${endpoint}?`);
+  url += `apiKey=${API_KEY}`;
+  return url;
+};
+const getArticles = async (addToList = false) => {
+  if (!addToList) {
+    urlOptions.page = 1;
+    newsList = [];
+  }
+
+  let url = getURL(urlOptions);
+  const response = await fetch(url);
+  const data = await response.json();
+
+  newsList = [...newsList, ...data.articles];
+  renderSources(newsList);
+  renderArticles(newsList);
+  document.getElementById("counter").innerHTML = newsList.length;
+};
+
+const renderArticles = (newsList) => {
+  const newsListHTML = newsList
+    .map((news) => {
+      return `<li class="media my-4">
+  <div class="media-body">
+    <h4 class="mt-0 mb-1">${news.title}</h4>
+    <p>${news.content}</p>
+    <span class="badge badge-info">${news.source.name}</span> -
+    <span class="published-at">5 mins ago</span>
+    <div>
+      <img
+        class="view-more-ico mt-4"
+        src="https://lh3.googleusercontent.com/JDFOyo903E9WGstK0YhI2ZFOKR3h4qDxBngX5M8XJVBZFKzOBoxLmk3OVlgNw9SOE-HfkNgb=w32-rw"
+        alt="icon view more"
+      />
+      <a href="${news.url}">View Full Coverage</a>
+    </div>
+  </div>
+  <img
+    class="ml-3"
+    src="${news.urlToImage}"
+    alt="Image article"
+  />
+</li>`;
     })
+    .join("");
+
+  document.getElementById("category-title").innerHTML =
+    urlOptions.category || "Top Headlines";
+  document.getElementById("news-list").innerHTML = newsListHTML;
+};
+
+const countingSources = (newsList) => {
+  const sourceCounter = {};
+
+  newsList.forEach((item) => {
+    console.log(item.source.name);
+    if (!(item.source.name in sourceCounter)) {
+      sourceCounter[item.source.name] = 1;
+    } else {
+      sourceCounter[item.source.name] += 1;
+    }
+    console.log(sourceCounter);
   });
-  renderArticle(newArticles);
-  if (newArticles == '') {
-    renderArticle(oldArr);
+  return sourceCounter;
+};
+
+const renderSources = (newsList) => {
+  const sourceCounter = countingSources(newsList);
+  const sourceListHTML = Object.keys(sourceCounter)
+    .map(
+      (source) =>
+        `<button type="button" class="btn btn-outline-dark m-1" onclick='handleSourceClicked("${source}")'>
+          ${source} <span class="badge badge-info">${sourceCounter[source]}</span>
+         </button>`
+    )
+    .join("");
+
+  document.getElementById("source-list").innerHTML = sourceListHTML;
+};
+
+//Extras functions
+const handleClickSideMenu = (categoryInput) => {
+  if (categoryInput == "top-stories") {
+    urlOptions.category = "";
+  } else {
+    urlOptions.category = categoryInput;
   }
-}
+  getArticles();
+};
 
-async function getNews() {
-  try {
-    let response = await fetch(url);
-    let jsonData = await response.json();
-    let {
-      articles
-    } = jsonData;
-    // console.log(articles);
-    renderArticle(articles);
+const handleSearchClick = () => {
+  console.log(document.getElementById("search-input").value);
+  let query = document.getElementById("search-input").value;
+  urlOptions.q = query;
+  urlOptions.country = "";
+  endpoint = "everything";
+  getArticles();
+};
 
-    let source = [];
-    articles.forEach(element => {
-      let currentSource = source.find((item) => item == element.source.name);
-      if (!currentSource) {
-        source.push({
-          name: element.source.name,
-          count: 1
-        });
-      } else {
-        source.count++;
-      }
-    });
-    document.getElementById('source').innerHTML = source.map((item) => `
-      <label>
-        <input type="checkbox" name="source" value="${item.name}" class="js-source">
-        <span>${item.name}(${item.count})</span>
-      </label>
-    `).join('');
-
-    let input = document.getElementsByClassName('js-source');
-    let searchArr = [];
-    for (let i = 0; i < input.length; i++) {
-      input[i].addEventListener('change', function () {
-        if (this.checked) {
-          searchArr.push(this.value);
-          archiveArticle(articles, searchArr);
-        } else {
-          searchArr.splice(searchArr.indexOf(this.value), 1);
-          archiveArticle(articles, searchArr);
-        }
-      });
-    }
-
-    let toggle = document.getElementsByClassName('toggle');
-    for(let i = 0; i < toggle.length; i++) {
-      toggle[i].addEventListener('click', function() {
-        if(this.parentNode.childNodes[5].classList.contains('show')) {
-          this.parentNode.childNodes[5].classList.remove("show");
-          this.classList.remove("active");
-        } else {
-          this.parentNode.childNodes[5].classList.add("show");
-          this.classList.add("active");
-        }
-      });
-    }
-  } catch (error) {
-    console.log(error);
+const handleSourceClicked = (sourceInput) => {
+  if (sourceInput == "all") {
+    renderArticles(newsList);
+  } else {
+    let filterList = newsList.filter((news) => news.source.name == sourceInput);
+    renderArticles(filterList);
   }
-  console.log('Keep running!')
-}
+};
 
-getNews();
+const handleLoadMoreClick = () => {
+  urlOptions.page++;
+  getArticles(true);
+};
+
+//for the first launch
+getArticles();
